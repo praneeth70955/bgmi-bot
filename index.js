@@ -56,7 +56,7 @@ const REGISTRATION_LOG_CHANNEL = "registration-log";
 const REGISTRATION_PUBLIC_CHANNEL = "registration";
 
 const SET_NAMES = ["SET-A", "SET-B", "SET-C", "SET-D"];
-const MAX_TEAMS_PER_SET = 25;
+const MAX_TEAMS_PER_SET = 20;
 
 const EMOJI_ACCEPTED = "✅";
 const EMOJI_REVIEWED = "☑️";
