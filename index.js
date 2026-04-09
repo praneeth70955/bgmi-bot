@@ -1,4 +1,9 @@
-require('dotenv').config();
+require("dotenv").config();
+
+const express = require("express");
+const app = express();
+
+const PORT = process.env.PORT || 3000;
 
 const {
   Client,
@@ -14,10 +19,10 @@ const {
   ButtonStyle,
   ModalBuilder,
   TextInputBuilder,
-  TextInputStyle
-} = require('discord.js');
+  TextInputStyle,
+} = require("discord.js");
 
-const axios = require('axios');
+const axios = require("axios");
 
 // ================= CLIENT =================
 const client = new Client({
@@ -26,9 +31,9 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.MessageContent,
-    GatewayIntentBits.DirectMessages
+    GatewayIntentBits.DirectMessages,
   ],
-  partials: [Partials.Channel]
+  partials: [Partials.Channel],
 });
 
 // ================= ENV =================
@@ -62,7 +67,7 @@ let db = {
   registeredTeams: [],
   lockedSets: {},
   registrationStatusMessageId: null,
-  registrationPanelMessageId: null
+  registrationPanelMessageId: null,
 };
 
 // ================= GOOGLE SHEET API =================
@@ -79,7 +84,7 @@ async function apiGetAll() {
 async function apiPost(payload) {
   try {
     const res = await axios.post(GOOGLE_SCRIPT_URL, payload, {
-      headers: { 'Content-Type': 'application/json' }
+      headers: { "Content-Type": "application/json" },
     });
     return res.data;
   } catch (e) {
@@ -96,7 +101,7 @@ async function loadDBFromSheet() {
     return false;
   }
 
-  db.registeredTeams = (data.registrations || []).map(t => ({
+  db.registeredTeams = (data.registrations || []).map((t) => ({
     submitterDiscordId: String(t.submitterDiscordId || ""),
     teamName: String(t.teamName || ""),
     leaderId: String(t.leaderId || ""),
@@ -106,11 +111,12 @@ async function loadDBFromSheet() {
     slot: String(t.slot || ""),
     registeredAt: String(t.registeredAt || ""),
     player5: String(t.player5 || ""),
-    player6: String(t.player6 || "")
+    player6: String(t.player6 || ""),
   }));
 
   db.lockedSets = data.lockedSets || {};
-  db.registrationStatusMessageId = data.meta?.registrationStatusMessageId || null;
+  db.registrationStatusMessageId =
+    data.meta?.registrationStatusMessageId || null;
   db.registrationPanelMessageId = data.meta?.registrationPanelMessageId || null;
 
   for (const setName of SET_NAMES) {
@@ -125,14 +131,14 @@ async function loadDBFromSheet() {
 async function addRegistrationToSheet(teamData) {
   return await apiPost({
     action: "addRegistration",
-    data: teamData
+    data: teamData,
   });
 }
 
 async function removeTeamFromSheet(teamName) {
   return await apiPost({
     action: "removeTeam",
-    teamName
+    teamName,
   });
 }
 
@@ -140,7 +146,7 @@ async function setLockInSheet(setName, locked) {
   return await apiPost({
     action: "setLock",
     setName,
-    locked
+    locked,
   });
 }
 
@@ -148,13 +154,13 @@ async function setMetaInSheet(key, value) {
   return await apiPost({
     action: "setMeta",
     key,
-    value
+    value,
   });
 }
 
 async function clearAllRegistrationsInSheet() {
   return await apiPost({
-    action: "clearAllRegistrations"
+    action: "clearAllRegistrations",
   });
 }
 
@@ -163,13 +169,13 @@ async function updateSubsInSheet(teamName, player5, player6) {
     action: "updateSubs",
     teamName,
     player5,
-    player6
+    player6,
   });
 }
 
 // ================= HELPERS =================
 function normalizeId(id) {
-  return String(id || '').trim();
+  return String(id || "").trim();
 }
 
 function isValidBgmiId(id) {
@@ -177,7 +183,7 @@ function isValidBgmiId(id) {
 }
 
 function getTeamsInSet(setName) {
-  return db.registeredTeams.filter(t => t.slot === setName).length;
+  return db.registeredTeams.filter((t) => t.slot === setName).length;
 }
 
 function getAvailableSet() {
@@ -193,7 +199,7 @@ function totalTeams() {
 }
 
 function totalSlotsLeft() {
-  return (SET_NAMES.length * MAX_TEAMS_PER_SET) - totalTeams();
+  return SET_NAMES.length * MAX_TEAMS_PER_SET - totalTeams();
 }
 
 function registrationsOpen() {
@@ -205,7 +211,7 @@ function getSlotStatusText() {
   for (const setName of SET_NAMES) {
     const used = getTeamsInSet(setName);
     const left = MAX_TEAMS_PER_SET - used;
-    const lock = db.lockedSets[setName] ? ' 🔒 LOCKED' : '';
+    const lock = db.lockedSets[setName] ? " 🔒 LOCKED" : "";
     txt += `**${setName}** ➜ ${used}/${MAX_TEAMS_PER_SET} teams | ${left} slots left${lock}\n`;
   }
   txt += `\n🧮 **Total Registered:** ${totalTeams()}/${SET_NAMES.length * MAX_TEAMS_PER_SET}\n`;
@@ -220,8 +226,10 @@ function getAllIdsFromTeam(team) {
     team.player3,
     team.player4,
     team.player5,
-    team.player6
-  ].map(normalizeId).filter(Boolean);
+    team.player6,
+  ]
+    .map(normalizeId)
+    .filter(Boolean);
 }
 
 function hasInternalDuplicate(ids) {
@@ -234,7 +242,10 @@ function isDuplicateAny(ids, excludeTeamName = null) {
   const existingIds = new Set();
 
   for (const team of db.registeredTeams) {
-    if (excludeTeamName && team.teamName.toLowerCase() === excludeTeamName.toLowerCase()) {
+    if (
+      excludeTeamName &&
+      team.teamName.toLowerCase() === excludeTeamName.toLowerCase()
+    ) {
       continue;
     }
 
@@ -304,7 +315,9 @@ async function updateRegistrationStatusMessage(guild) {
     await loadDBFromSheet();
 
     const regChannel = guild.channels.cache.find(
-      ch => ch.type === ChannelType.GuildText && ch.name === REGISTRATION_PUBLIC_CHANNEL
+      (ch) =>
+        ch.type === ChannelType.GuildText &&
+        ch.name === REGISTRATION_PUBLIC_CHANNEL,
     );
     if (!regChannel) {
       console.log(`⚠️ #${REGISTRATION_PUBLIC_CHANNEL} not found`);
@@ -314,19 +327,23 @@ async function updateRegistrationStatusMessage(guild) {
     const open = registrationsOpen();
 
     const embed = new EmbedBuilder()
-      .setTitle(open ? '🟢 Registrations Open' : '🔴 Registrations Full / Locked')
+      .setTitle(
+        open ? "🟢 Registrations Open" : "🔴 Registrations Full / Locked",
+      )
       .setDescription(
         open
           ? `Fill the registration form below.\n\n${getSlotStatusText()}`
-          : `All slots are full or locked by admins.\nPlease wait for an admin update.\n\n${getSlotStatusText()}`
+          : `All slots are full or locked by admins.\nPlease wait for an admin update.\n\n${getSlotStatusText()}`,
       )
       .setColor(open ? 0x00ff66 : 0xff3333)
-      .setFooter({ text: 'LUMA BGMI Registration Status' })
+      .setFooter({ text: "LUMA BGMI Registration Status" })
       .setTimestamp();
 
     if (db.registrationStatusMessageId) {
       try {
-        const oldMsg = await regChannel.messages.fetch(db.registrationStatusMessageId);
+        const oldMsg = await regChannel.messages.fetch(
+          db.registrationStatusMessageId,
+        );
         await oldMsg.edit({ embeds: [embed] });
         return;
       } catch {
@@ -336,13 +353,12 @@ async function updateRegistrationStatusMessage(guild) {
     }
 
     const recent = await regChannel.messages.fetch({ limit: 30 });
-    const old = recent.find(m =>
-      m.author.id === client.user.id &&
-      m.embeds.length > 0 &&
-      (
-        m.embeds[0].title?.includes('Registrations Open') ||
-        m.embeds[0].title?.includes('Registrations Full')
-      )
+    const old = recent.find(
+      (m) =>
+        m.author.id === client.user.id &&
+        m.embeds.length > 0 &&
+        (m.embeds[0].title?.includes("Registrations Open") ||
+          m.embeds[0].title?.includes("Registrations Full")),
     );
 
     if (old) {
@@ -355,7 +371,6 @@ async function updateRegistrationStatusMessage(guild) {
     const sent = await regChannel.send({ embeds: [embed] });
     db.registrationStatusMessageId = sent.id;
     await setMetaInSheet("registrationStatusMessageId", sent.id);
-
   } catch (e) {
     console.log("Status update error:", e.message);
   }
@@ -364,7 +379,9 @@ async function updateRegistrationStatusMessage(guild) {
 async function ensureRegistrationPanel(guild) {
   try {
     const regChannel = guild.channels.cache.find(
-      ch => ch.type === ChannelType.GuildText && ch.name === REGISTRATION_PUBLIC_CHANNEL
+      (ch) =>
+        ch.type === ChannelType.GuildText &&
+        ch.name === REGISTRATION_PUBLIC_CHANNEL,
     );
     if (!regChannel) {
       console.log(`⚠️ #${REGISTRATION_PUBLIC_CHANNEL} not found for panel`);
@@ -372,9 +389,9 @@ async function ensureRegistrationPanel(guild) {
     }
 
     const embed = new EmbedBuilder()
-      .setTitle('🎮 LUMA BGMI TOURNAMENT REGISTRATION')
+      .setTitle("🎮 LUMA BGMI TOURNAMENT REGISTRATION")
       .setDescription(
-`📌 Required in form:
+        `📌 Required in form:
 • Team Name
 • Leader BGMI ID (11 digits)
 • Player 2 BGMI ID (11 digits)
@@ -387,22 +404,24 @@ Use \`/addsubs\` later for Player 5 and Player 6.
 ⚠️ Only submit once.
 ⚠️ All required BGMI IDs must be unique.
 
-Tap the button below to register.`
+Tap the button below to register.`,
       )
-      .setColor(0x5865F2)
-      .setFooter({ text: 'LUMA Registration Panel' });
+      .setColor(0x5865f2)
+      .setFooter({ text: "LUMA Registration Panel" });
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId('open_registration_modal')
-        .setLabel('Registration Form')
+        .setCustomId("open_registration_modal")
+        .setLabel("Registration Form")
         .setStyle(ButtonStyle.Primary)
-        .setEmoji('📄')
+        .setEmoji("📄"),
     );
 
     if (db.registrationPanelMessageId) {
       try {
-        const oldMsg = await regChannel.messages.fetch(db.registrationPanelMessageId);
+        const oldMsg = await regChannel.messages.fetch(
+          db.registrationPanelMessageId,
+        );
         await oldMsg.edit({ embeds: [embed], components: [row] });
         return;
       } catch {
@@ -412,10 +431,11 @@ Tap the button below to register.`
     }
 
     const recent = await regChannel.messages.fetch({ limit: 30 });
-    const old = recent.find(m =>
-      m.author.id === client.user.id &&
-      m.embeds.length > 0 &&
-      m.embeds[0].title?.includes('LUMA BGMI TOURNAMENT REGISTRATION')
+    const old = recent.find(
+      (m) =>
+        m.author.id === client.user.id &&
+        m.embeds.length > 0 &&
+        m.embeds[0].title?.includes("LUMA BGMI TOURNAMENT REGISTRATION"),
     );
 
     if (old) {
@@ -428,17 +448,25 @@ Tap the button below to register.`
     const sent = await regChannel.send({ embeds: [embed], components: [row] });
     db.registrationPanelMessageId = sent.id;
     await setMetaInSheet("registrationPanelMessageId", sent.id);
-
   } catch (e) {
     console.log("Panel create/update error:", e.message);
   }
 }
 
 // ================= LOG MESSAGE =================
-async function sendRegistrationLog(guild, user, formData, accepted, reason = null, assignedSet = null) {
+async function sendRegistrationLog(
+  guild,
+  user,
+  formData,
+  accepted,
+  reason = null,
+  assignedSet = null,
+) {
   try {
     const logChannel = guild.channels.cache.find(
-      ch => ch.type === ChannelType.GuildText && ch.name === REGISTRATION_LOG_CHANNEL
+      (ch) =>
+        ch.type === ChannelType.GuildText &&
+        ch.name === REGISTRATION_LOG_CHANNEL,
     );
     if (!logChannel) {
       console.log(`⚠️ #${REGISTRATION_LOG_CHANNEL} not found`);
@@ -446,29 +474,31 @@ async function sendRegistrationLog(guild, user, formData, accepted, reason = nul
     }
 
     const embed = new EmbedBuilder()
-      .setTitle(accepted ? '✅ Registration Accepted' : '❌ Registration Rejected')
+      .setTitle(
+        accepted ? "✅ Registration Accepted" : "❌ Registration Rejected",
+      )
       .setColor(accepted ? 0x00ff66 : 0xff3333)
       .setDescription(`${user}`)
       .addFields(
-        { name: 'Team name', value: formData.teamName },
-        { name: 'Leader BGMI ID (11 digits)', value: formData.leaderId },
-        { name: 'Player 2 BGMI ID (11 digits)', value: formData.p2 },
-        { name: 'Player 3 BGMI ID (11 digits)', value: formData.p3 },
-        { name: 'Player 4 BGMI ID (11 digits)', value: formData.p4 }
+        { name: "Team name", value: formData.teamName },
+        { name: "Leader BGMI ID (11 digits)", value: formData.leaderId },
+        { name: "Player 2 BGMI ID (11 digits)", value: formData.p2 },
+        { name: "Player 3 BGMI ID (11 digits)", value: formData.p3 },
+        { name: "Player 4 BGMI ID (11 digits)", value: formData.p4 },
       )
       .setTimestamp();
 
     if (accepted && assignedSet) {
-      embed.addFields({ name: 'Allocated Set', value: assignedSet });
+      embed.addFields({ name: "Allocated Set", value: assignedSet });
     }
 
     if (!accepted && reason) {
-      embed.addFields({ name: 'Rejection Reason', value: reason });
+      embed.addFields({ name: "Rejection Reason", value: reason });
     }
 
     const msg = await logChannel.send({
       content: `${user}`,
-      embeds: [embed]
+      embeds: [embed],
     });
 
     if (accepted) {
@@ -490,19 +520,21 @@ async function handleRegistrationSubmit(interaction, formData) {
   try {
     const ids = [formData.leaderId, formData.p2, formData.p3, formData.p4];
 
-    const alreadyByUser = db.registeredTeams.find(t => t.submitterDiscordId === interaction.user.id);
+    const alreadyByUser = db.registeredTeams.find(
+      (t) => t.submitterDiscordId === interaction.user.id,
+    );
     if (alreadyByUser) {
       await sendRegistrationLog(
         interaction.guild,
         interaction.user,
         formData,
         false,
-        `User already registered as team **${alreadyByUser.teamName}** in **${alreadyByUser.slot}**.`
+        `User already registered as team **${alreadyByUser.teamName}** in **${alreadyByUser.slot}**.`,
       );
 
       return safeEditReply(
         interaction,
-        `❌ You already registered a team (**${alreadyByUser.teamName}**) in **${alreadyByUser.slot}**.`
+        `❌ You already registered a team (**${alreadyByUser.teamName}**) in **${alreadyByUser.slot}**.`,
       );
     }
 
@@ -512,12 +544,12 @@ async function handleRegistrationSubmit(interaction, formData) {
         interaction.user,
         formData,
         false,
-        'All required BGMI IDs must be exactly 11 digits.'
+        "All required BGMI IDs must be exactly 11 digits.",
       );
 
       return safeEditReply(
         interaction,
-        '❌ All required BGMI IDs must be exactly 11 digits.'
+        "❌ All required BGMI IDs must be exactly 11 digits.",
       );
     }
 
@@ -527,12 +559,12 @@ async function handleRegistrationSubmit(interaction, formData) {
         interaction.user,
         formData,
         false,
-        'Same BGMI ID is repeated inside the team.'
+        "Same BGMI ID is repeated inside the team.",
       );
 
       return safeEditReply(
         interaction,
-        '❌ Duplicate BGMI ID inside your team. Leader/P2/P3/P4 must all be different.'
+        "❌ Duplicate BGMI ID inside your team. Leader/P2/P3/P4 must all be different.",
       );
     }
 
@@ -542,12 +574,12 @@ async function handleRegistrationSubmit(interaction, formData) {
         interaction.user,
         formData,
         false,
-        'One or more BGMI IDs are already used in another registered team.'
+        "One or more BGMI IDs are already used in another registered team.",
       );
 
       return safeEditReply(
         interaction,
-        '❌ One or more BGMI IDs are already registered in another team.'
+        "❌ One or more BGMI IDs are already registered in another team.",
       );
     }
 
@@ -558,30 +590,32 @@ async function handleRegistrationSubmit(interaction, formData) {
         interaction.user,
         formData,
         false,
-        'All sets are full or locked by admins.'
+        "All sets are full or locked by admins.",
       );
 
       await updateRegistrationStatusMessage(interaction.guild);
 
       return safeEditReply(
         interaction,
-        '❌ Registrations are currently full or all sets are locked.'
+        "❌ Registrations are currently full or all sets are locked.",
       );
     }
 
-    const role = interaction.guild.roles.cache.find(r => r.name === availableSet);
+    const role = interaction.guild.roles.cache.find(
+      (r) => r.name === availableSet,
+    );
     if (!role) {
       await sendRegistrationLog(
         interaction.guild,
         interaction.user,
         formData,
         false,
-        `Role ${availableSet} not found in server.`
+        `Role ${availableSet} not found in server.`,
       );
 
       return safeEditReply(
         interaction,
-        `❌ Role **${availableSet}** not found in server. Contact admin.`
+        `❌ Role **${availableSet}** not found in server. Contact admin.`,
       );
     }
 
@@ -595,12 +629,15 @@ async function handleRegistrationSubmit(interaction, formData) {
       slot: availableSet,
       registeredAt: new Date().toISOString(),
       player5: "",
-      player6: ""
+      player6: "",
     };
 
     const addResult = await addRegistrationToSheet(teamData);
     if (!addResult.success) {
-      return safeEditReply(interaction, '❌ Failed to save registration in Google Sheet.');
+      return safeEditReply(
+        interaction,
+        "❌ Failed to save registration in Google Sheet.",
+      );
     }
 
     await loadDBFromSheet();
@@ -619,13 +656,13 @@ async function handleRegistrationSubmit(interaction, formData) {
       formData,
       true,
       null,
-      availableSet
+      availableSet,
     );
 
     await sendDM(
       interaction.guild,
       interaction.user.id,
-`✅ **Your team is successfully registered!**
+      `✅ **Your team is successfully registered!**
 
 🏷️ **Team Name:** ${formData.teamName}
 🎯 **Allocated Slot:** ${availableSet}
@@ -639,110 +676,122 @@ Use \`/addsubs\` in **#${ADMIN_CHANNEL_NAME}** (admin can do it) or ask admin to
 - You have been given the **${availableSet}** role
 - Check your set channel: **#${availableSet}**
 - Match schedule: **#match-date-and-time**
-- Points table: **#points-table**`
+- Points table: **#points-table**`,
     );
 
     await updateRegistrationStatusMessage(interaction.guild);
 
     return safeEditReply(
       interaction,
-      `✅ Registration successful!\n🎯 Your team **${formData.teamName}** is allocated to **${availableSet}**.\n📩 Check your DM.`
+      `✅ Registration successful!\n🎯 Your team **${formData.teamName}** is allocated to **${availableSet}**.\n📩 Check your DM.`,
     );
-
   } catch (e) {
     console.log("handleRegistrationSubmit error:", e.message);
-    return safeEditReply(interaction, '❌ Something went wrong while processing registration.');
+    return safeEditReply(
+      interaction,
+      "❌ Something went wrong while processing registration.",
+    );
   }
 }
 
 // ================= COMMANDS =================
 const commands = [
   new SlashCommandBuilder()
-    .setName('count')
-    .setDescription('Show current slot count for all sets'),
+    .setName("count")
+    .setDescription("Show current slot count for all sets"),
 
   new SlashCommandBuilder()
-    .setName('lockset')
-    .setDescription('Lock a set to stop new registrations into it')
-    .addStringOption(opt =>
-      opt.setName('set')
-        .setDescription('Which set to lock')
+    .setName("lockset")
+    .setDescription("Lock a set to stop new registrations into it")
+    .addStringOption((opt) =>
+      opt
+        .setName("set")
+        .setDescription("Which set to lock")
         .setRequired(true)
-        .addChoices(...SET_NAMES.map(s => ({ name: s, value: s })))
+        .addChoices(...SET_NAMES.map((s) => ({ name: s, value: s }))),
     ),
 
   new SlashCommandBuilder()
-    .setName('unlockset')
-    .setDescription('Unlock a set to allow registrations again')
-    .addStringOption(opt =>
-      opt.setName('set')
-        .setDescription('Which set to unlock')
+    .setName("unlockset")
+    .setDescription("Unlock a set to allow registrations again")
+    .addStringOption((opt) =>
+      opt
+        .setName("set")
+        .setDescription("Which set to unlock")
         .setRequired(true)
-        .addChoices(...SET_NAMES.map(s => ({ name: s, value: s })))
+        .addChoices(...SET_NAMES.map((s) => ({ name: s, value: s }))),
     ),
 
   new SlashCommandBuilder()
-    .setName('setstatus')
-    .setDescription('Show lock/unlock status of all sets'),
+    .setName("setstatus")
+    .setDescription("Show lock/unlock status of all sets"),
 
   new SlashCommandBuilder()
-    .setName('removeteam')
-    .setDescription('Remove a registered team and revoke their role')
-    .addStringOption(opt =>
-      opt.setName('teamname')
-        .setDescription('Exact team name to remove')
-        .setRequired(true)
+    .setName("removeteam")
+    .setDescription("Remove a registered team and revoke their role")
+    .addStringOption((opt) =>
+      opt
+        .setName("teamname")
+        .setDescription("Exact team name to remove")
+        .setRequired(true),
     ),
 
   new SlashCommandBuilder()
-    .setName('listteams')
-    .setDescription('List all registered teams in a set')
-    .addStringOption(opt =>
-      opt.setName('set')
-        .setDescription('Which set')
+    .setName("listteams")
+    .setDescription("List all registered teams in a set")
+    .addStringOption((opt) =>
+      opt
+        .setName("set")
+        .setDescription("Which set")
         .setRequired(true)
-        .addChoices(...SET_NAMES.map(s => ({ name: s, value: s })))
+        .addChoices(...SET_NAMES.map((s) => ({ name: s, value: s }))),
     ),
 
   new SlashCommandBuilder()
-    .setName('refreshpanel')
-    .setDescription('Recreate/update registration panel and status messages'),
+    .setName("refreshpanel")
+    .setDescription("Recreate/update registration panel and status messages"),
 
   new SlashCommandBuilder()
-    .setName('resetall')
-    .setDescription('Delete all registrations, reset all slots, unlock all sets'),
+    .setName("resetall")
+    .setDescription(
+      "Delete all registrations, reset all slots, unlock all sets",
+    ),
 
   new SlashCommandBuilder()
-    .setName('nukechannel')
-    .setDescription('Clone current channel and delete old one (full clear)'),
+    .setName("nukechannel")
+    .setDescription("Clone current channel and delete old one (full clear)"),
 
   new SlashCommandBuilder()
-    .setName('addsubs')
-    .setDescription('Add optional Player 5 / Player 6 to an existing team')
-    .addStringOption(opt =>
-      opt.setName('teamname')
-        .setDescription('Exact team name')
-        .setRequired(true)
+    .setName("addsubs")
+    .setDescription("Add optional Player 5 / Player 6 to an existing team")
+    .addStringOption((opt) =>
+      opt
+        .setName("teamname")
+        .setDescription("Exact team name")
+        .setRequired(true),
     )
-    .addStringOption(opt =>
-      opt.setName('player5')
-        .setDescription('Player 5 BGMI ID (11 digits)')
-        .setRequired(false)
+    .addStringOption((opt) =>
+      opt
+        .setName("player5")
+        .setDescription("Player 5 BGMI ID (11 digits)")
+        .setRequired(false),
     )
-    .addStringOption(opt =>
-      opt.setName('player6')
-        .setDescription('Player 6 BGMI ID (11 digits)')
-        .setRequired(false)
+    .addStringOption((opt) =>
+      opt
+        .setName("player6")
+        .setDescription("Player 6 BGMI ID (11 digits)")
+        .setRequired(false),
     ),
 
   new SlashCommandBuilder()
-    .setName('removesubs')
-    .setDescription('Remove Player 5 and Player 6 from a team')
-    .addStringOption(opt =>
-      opt.setName('teamname')
-        .setDescription('Exact team name')
-        .setRequired(true)
-    )
+    .setName("removesubs")
+    .setDescription("Remove Player 5 and Player 6 from a team")
+    .addStringOption((opt) =>
+      opt
+        .setName("teamname")
+        .setDescription("Exact team name")
+        .setRequired(true),
+    ),
 ];
 
 // ================= READY =================
@@ -751,16 +800,16 @@ client.once(Events.ClientReady, async () => {
 
   try {
     await loadDBFromSheet();
-    console.log('✅ Google Sheet connected');
+    console.log("✅ Google Sheet connected");
   } catch (e) {
-    console.log('⚠️ Google Sheet initial load failed:', e.message);
+    console.log("⚠️ Google Sheet initial load failed:", e.message);
   }
 
   try {
     await client.application.commands.set(commands);
-    console.log('✅ Slash commands registered');
+    console.log("✅ Slash commands registered");
   } catch (e) {
-    console.log('Command register error:', e.message);
+    console.log("Command register error:", e.message);
   }
 
   setTimeout(async () => {
@@ -776,49 +825,49 @@ client.once(Events.ClientReady, async () => {
 });
 
 // ================= INTERACTIONS =================
-client.on(Events.InteractionCreate, async interaction => {
+client.on(Events.InteractionCreate, async (interaction) => {
   try {
     // ===== BUTTON =====
     if (interaction.isButton()) {
-      if (interaction.customId === 'open_registration_modal') {
+      if (interaction.customId === "open_registration_modal") {
         const modal = new ModalBuilder()
-          .setCustomId('registration_modal_submit')
-          .setTitle('LUMA BGMI Registration');
+          .setCustomId("registration_modal_submit")
+          .setTitle("LUMA BGMI Registration");
 
         const teamNameInput = new TextInputBuilder()
-          .setCustomId('team_name')
-          .setLabel('Team Name')
+          .setCustomId("team_name")
+          .setLabel("Team Name")
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
           .setMaxLength(50);
 
         const leaderInput = new TextInputBuilder()
-          .setCustomId('leader_id')
-          .setLabel('Leader BGMI ID (11 digits)')
+          .setCustomId("leader_id")
+          .setLabel("Leader BGMI ID (11 digits)")
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
           .setMinLength(11)
           .setMaxLength(11);
 
         const p2Input = new TextInputBuilder()
-          .setCustomId('p2_id')
-          .setLabel('Player 2 BGMI ID (11 digits)')
+          .setCustomId("p2_id")
+          .setLabel("Player 2 BGMI ID (11 digits)")
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
           .setMinLength(11)
           .setMaxLength(11);
 
         const p3Input = new TextInputBuilder()
-          .setCustomId('p3_id')
-          .setLabel('Player 3 BGMI ID (11 digits)')
+          .setCustomId("p3_id")
+          .setLabel("Player 3 BGMI ID (11 digits)")
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
           .setMinLength(11)
           .setMaxLength(11);
 
         const p4Input = new TextInputBuilder()
-          .setCustomId('p4_id')
-          .setLabel('Player 4 BGMI ID (11 digits)')
+          .setCustomId("p4_id")
+          .setLabel("Player 4 BGMI ID (11 digits)")
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
           .setMinLength(11)
@@ -829,7 +878,7 @@ client.on(Events.InteractionCreate, async interaction => {
           new ActionRowBuilder().addComponents(leaderInput),
           new ActionRowBuilder().addComponents(p2Input),
           new ActionRowBuilder().addComponents(p3Input),
-          new ActionRowBuilder().addComponents(p4Input)
+          new ActionRowBuilder().addComponents(p4Input),
         );
 
         return await interaction.showModal(modal);
@@ -838,27 +887,30 @@ client.on(Events.InteractionCreate, async interaction => {
 
     // ===== MODAL SUBMIT =====
     if (interaction.isModalSubmit()) {
-      if (interaction.customId === 'registration_modal_submit') {
+      if (interaction.customId === "registration_modal_submit") {
         await interaction.deferReply({ ephemeral: true });
 
         const loaded = await loadDBFromSheet();
         if (!loaded) {
-          return safeEditReply(interaction, '❌ Failed to connect to Google Sheet.');
+          return safeEditReply(
+            interaction,
+            "❌ Failed to connect to Google Sheet.",
+          );
         }
 
         if (!registrationsOpen()) {
           return safeEditReply(
             interaction,
-            '❌ Registrations are currently full or locked by admins.'
+            "❌ Registrations are currently full or locked by admins.",
           );
         }
 
         const formData = {
-          teamName: interaction.fields.getTextInputValue('team_name').trim(),
-          leaderId: interaction.fields.getTextInputValue('leader_id').trim(),
-          p2: interaction.fields.getTextInputValue('p2_id').trim(),
-          p3: interaction.fields.getTextInputValue('p3_id').trim(),
-          p4: interaction.fields.getTextInputValue('p4_id').trim()
+          teamName: interaction.fields.getTextInputValue("team_name").trim(),
+          leaderId: interaction.fields.getTextInputValue("leader_id").trim(),
+          p2: interaction.fields.getTextInputValue("p2_id").trim(),
+          p3: interaction.fields.getTextInputValue("p3_id").trim(),
+          p4: interaction.fields.getTextInputValue("p4_id").trim(),
         };
 
         return await handleRegistrationSubmit(interaction, formData);
@@ -866,90 +918,117 @@ client.on(Events.InteractionCreate, async interaction => {
     }
 
     // ===== SLASH COMMANDS =====
-   if (!interaction.isChatInputCommand()) return;
+    if (!interaction.isChatInputCommand()) return;
 
-await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply({ ephemeral: true });
 
-// Public command allowed only in #registration
-if (interaction.commandName === 'addsubs') {
-  if (!interaction.channel || interaction.channel.name !== REGISTRATION_PUBLIC_CHANNEL) {
-    return safeReply(interaction, `❌ Please use /addsubs only in #${REGISTRATION_PUBLIC_CHANNEL}`);
-  }
-} else {
-  // All other commands = admin only + admin channel only
-  if (!isAdmin(interaction.member)) {
-    return safeReply(interaction, '❌ Only admins can use this command.');
-  }
+    // Public command allowed only in #registration
+    if (interaction.commandName === "addsubs") {
+      if (
+        !interaction.channel ||
+        interaction.channel.name !== REGISTRATION_PUBLIC_CHANNEL
+      ) {
+        return safeReply(
+          interaction,
+          `❌ Please use /addsubs only in #${REGISTRATION_PUBLIC_CHANNEL}`,
+        );
+      }
+    } else {
+      // All other commands = admin only + admin channel only
+      if (!isAdmin(interaction.member)) {
+        return safeReply(interaction, "❌ Only admins can use this command.");
+      }
 
-  if (!isAdminChannel(interaction)) {
-    return safeReply(interaction, `❌ Please use commands only in #${ADMIN_CHANNEL_NAME}`);
-  }
-}
+      if (!isAdminChannel(interaction)) {
+        return safeReply(
+          interaction,
+          `❌ Please use commands only in #${ADMIN_CHANNEL_NAME}`,
+        );
+      }
+    }
 
     const loaded = await loadDBFromSheet();
     if (!loaded) {
-      return safeReply(interaction, '❌ Failed to connect to Google Sheet.');
+      return safeReply(interaction, "❌ Failed to connect to Google Sheet.");
     }
 
-    if (interaction.commandName === 'count') {
+    if (interaction.commandName === "count") {
       return safeReply(interaction, getSlotStatusText());
     }
 
-    if (interaction.commandName === 'lockset') {
-      const setName = interaction.options.getString('set');
+    if (interaction.commandName === "lockset") {
+      const setName = interaction.options.getString("set");
       const result = await setLockInSheet(setName, true);
-      if (!result.success) return safeReply(interaction, '❌ Failed to lock set.');
+      if (!result.success)
+        return safeReply(interaction, "❌ Failed to lock set.");
 
       await loadDBFromSheet();
       await updateRegistrationStatusMessage(interaction.guild);
-      return safeReply(interaction, `🔒 **${setName}** has been locked.\n\n${getSlotStatusText()}`);
+      return safeReply(
+        interaction,
+        `🔒 **${setName}** has been locked.\n\n${getSlotStatusText()}`,
+      );
     }
 
-    if (interaction.commandName === 'unlockset') {
-      const setName = interaction.options.getString('set');
+    if (interaction.commandName === "unlockset") {
+      const setName = interaction.options.getString("set");
       const result = await setLockInSheet(setName, false);
-      if (!result.success) return safeReply(interaction, '❌ Failed to unlock set.');
+      if (!result.success)
+        return safeReply(interaction, "❌ Failed to unlock set.");
 
       await loadDBFromSheet();
       await updateRegistrationStatusMessage(interaction.guild);
-      return safeReply(interaction, `🔓 **${setName}** has been unlocked.\n\n${getSlotStatusText()}`);
+      return safeReply(
+        interaction,
+        `🔓 **${setName}** has been unlocked.\n\n${getSlotStatusText()}`,
+      );
     }
 
-    if (interaction.commandName === 'setstatus') {
+    if (interaction.commandName === "setstatus") {
       let msg = `📋 **Set Status**\n\n`;
       for (const s of SET_NAMES) {
-        msg += `**${s}** ➜ ${db.lockedSets[s] ? '🔒 LOCKED' : '🟢 OPEN'}\n`;
+        msg += `**${s}** ➜ ${db.lockedSets[s] ? "🔒 LOCKED" : "🟢 OPEN"}\n`;
       }
       msg += `\n${getSlotStatusText()}`;
       return safeReply(interaction, msg);
     }
 
-    if (interaction.commandName === 'removeteam') {
-      const teamName = interaction.options.getString('teamname');
+    if (interaction.commandName === "removeteam") {
+      const teamName = interaction.options.getString("teamname");
 
-const team = db.registeredTeams.find(
-  t => t.teamName.toLowerCase() === teamName.toLowerCase()
-);
+      const team = db.registeredTeams.find(
+        (t) => t.teamName.toLowerCase() === teamName.toLowerCase(),
+      );
 
-if (!team) {
-  return safeReply(interaction, `❌ Team **${teamName}** not found.`);
-}
+      if (!team) {
+        return safeReply(interaction, `❌ Team **${teamName}** not found.`);
+      }
 
-const isTeamOwner = team.submitterDiscordId === interaction.user.id;
-const adminUser = isAdmin(interaction.member);
+      const isTeamOwner = team.submitterDiscordId === interaction.user.id;
+      const adminUser = isAdmin(interaction.member);
 
-if (!isTeamOwner && !adminUser) {
-  return safeReply(interaction, '❌ You can only add substitutes for your own team.');
-}
+      if (!isTeamOwner && !adminUser) {
+        return safeReply(
+          interaction,
+          "❌ You can only add substitutes for your own team.",
+        );
+      }
       const result = await removeTeamFromSheet(teamName);
       if (!result.success) {
-        return safeReply(interaction, `❌ Failed to remove **${teamName}** from Google Sheet.`);
+        return safeReply(
+          interaction,
+          `❌ Failed to remove **${teamName}** from Google Sheet.`,
+        );
       }
 
       if (team.submitterDiscordId) {
         try {
-          const member = await interaction.guild.members.fetch(team.submitterDiscordId);
-          const role = interaction.guild.roles.cache.find(r => r.name === team.slot);
+          const member = await interaction.guild.members.fetch(
+            team.submitterDiscordId,
+          );
+          const role = interaction.guild.roles.cache.find(
+            (r) => r.name === team.slot,
+          );
           if (role) {
             await member.roles.remove(role);
           }
@@ -963,16 +1042,19 @@ if (!isTeamOwner && !adminUser) {
 
       return safeReply(
         interaction,
-        `✅ Team **${team.teamName}** removed from **${team.slot}**.\n\n${getSlotStatusText()}`
+        `✅ Team **${team.teamName}** removed from **${team.slot}**.\n\n${getSlotStatusText()}`,
       );
     }
 
-    if (interaction.commandName === 'listteams') {
-      const setName = interaction.options.getString('set');
-      const teams = db.registeredTeams.filter(t => t.slot === setName);
+    if (interaction.commandName === "listteams") {
+      const setName = interaction.options.getString("set");
+      const teams = db.registeredTeams.filter((t) => t.slot === setName);
 
       if (teams.length === 0) {
-        return safeReply(interaction, `📋 No teams registered in **${setName}** yet.`);
+        return safeReply(
+          interaction,
+          `📋 No teams registered in **${setName}** yet.`,
+        );
       }
 
       let msg = `📋 **Teams in ${setName}** (${teams.length}/${MAX_TEAMS_PER_SET})\n\n`;
@@ -981,17 +1063,17 @@ if (!isTeamOwner && !adminUser) {
         msg += `**${i + 1}.** ${t.teamName}\n`;
         msg += `Leader: \`${t.leaderId}\`\n`;
         msg += `P2: \`${t.player2}\` | P3: \`${t.player3}\` | P4: \`${t.player4}\`\n`;
-        msg += `P5: \`${t.player5 || '—'}\` | P6: \`${t.player6 || '—'}\`\n\n`;
+        msg += `P5: \`${t.player5 || "—"}\` | P6: \`${t.player6 || "—"}\`\n\n`;
       });
 
       if (msg.length > 1900) {
-        msg = msg.substring(0, 1900) + '\n... (truncated)';
+        msg = msg.substring(0, 1900) + "\n... (truncated)";
       }
 
       return safeReply(interaction, msg);
     }
 
-    if (interaction.commandName === 'refreshpanel') {
+    if (interaction.commandName === "refreshpanel") {
       await setMetaInSheet("registrationPanelMessageId", "");
       await setMetaInSheet("registrationStatusMessageId", "");
 
@@ -1002,16 +1084,23 @@ if (!isTeamOwner && !adminUser) {
       await ensureRegistrationPanel(interaction.guild);
       await updateRegistrationStatusMessage(interaction.guild);
 
-      return safeReply(interaction, '✅ Registration panel and status embed refreshed.');
+      return safeReply(
+        interaction,
+        "✅ Registration panel and status embed refreshed.",
+      );
     }
 
-    if (interaction.commandName === 'resetall') {
+    if (interaction.commandName === "resetall") {
       for (const team of db.registeredTeams) {
         if (!team.submitterDiscordId) continue;
 
         try {
-          const member = await interaction.guild.members.fetch(team.submitterDiscordId);
-          const role = interaction.guild.roles.cache.find(r => r.name === team.slot);
+          const member = await interaction.guild.members.fetch(
+            team.submitterDiscordId,
+          );
+          const role = interaction.guild.roles.cache.find(
+            (r) => r.name === team.slot,
+          );
           if (role) {
             await member.roles.remove(role);
           }
@@ -1022,7 +1111,10 @@ if (!isTeamOwner && !adminUser) {
 
       const clearResult = await clearAllRegistrationsInSheet();
       if (!clearResult.success) {
-        return safeReply(interaction, '❌ Failed to clear registrations from Google Sheet.');
+        return safeReply(
+          interaction,
+          "❌ Failed to clear registrations from Google Sheet.",
+        );
       }
 
       for (const setName of SET_NAMES) {
@@ -1039,17 +1131,24 @@ if (!isTeamOwner && !adminUser) {
       await ensureRegistrationPanel(interaction.guild);
       await updateRegistrationStatusMessage(interaction.guild);
 
-      return safeReply(interaction, '✅ All player data cleared, all sets unlocked, roles removed, and panel reset.');
+      return safeReply(
+        interaction,
+        "✅ All player data cleared, all sets unlocked, roles removed, and panel reset.",
+      );
     }
 
-    if (interaction.commandName === 'nukechannel') {
+    if (interaction.commandName === "nukechannel") {
       const oldChannel = interaction.channel;
 
-      await safeReply(interaction, `💣 Nuking channel **#${oldChannel.name}**...`, true);
+      await safeReply(
+        interaction,
+        `💣 Nuking channel **#${oldChannel.name}**...`,
+        true,
+      );
 
       const newChannel = await oldChannel.clone({
         name: oldChannel.name,
-        reason: `Nuked by ${interaction.user.tag}`
+        reason: `Nuked by ${interaction.user.tag}`,
       });
 
       await newChannel.setPosition(oldChannel.position);
@@ -1078,13 +1177,13 @@ if (!isTeamOwner && !adminUser) {
       return;
     }
 
-    if (interaction.commandName === 'addsubs') {
-      const teamName = interaction.options.getString('teamname');
-      const player5 = (interaction.options.getString('player5') || '').trim();
-      const player6 = (interaction.options.getString('player6') || '').trim();
+    if (interaction.commandName === "addsubs") {
+      const teamName = interaction.options.getString("teamname");
+      const player5 = (interaction.options.getString("player5") || "").trim();
+      const player6 = (interaction.options.getString("player6") || "").trim();
 
       const team = db.registeredTeams.find(
-        t => t.teamName.toLowerCase() === teamName.toLowerCase()
+        (t) => t.teamName.toLowerCase() === teamName.toLowerCase(),
       );
 
       if (!team) {
@@ -1092,15 +1191,24 @@ if (!isTeamOwner && !adminUser) {
       }
 
       if (!player5 && !player6) {
-        return safeReply(interaction, '❌ Enter at least one of Player 5 or Player 6.');
+        return safeReply(
+          interaction,
+          "❌ Enter at least one of Player 5 or Player 6.",
+        );
       }
 
       if (player5 && !isValidBgmiId(player5)) {
-        return safeReply(interaction, '❌ Player 5 BGMI ID must be exactly 11 digits.');
+        return safeReply(
+          interaction,
+          "❌ Player 5 BGMI ID must be exactly 11 digits.",
+        );
       }
 
       if (player6 && !isValidBgmiId(player6)) {
-        return safeReply(interaction, '❌ Player 6 BGMI ID must be exactly 11 digits.');
+        return safeReply(
+          interaction,
+          "❌ Player 6 BGMI ID must be exactly 11 digits.",
+        );
       }
 
       const newIds = [
@@ -1109,11 +1217,14 @@ if (!isTeamOwner && !adminUser) {
         team.player3,
         team.player4,
         player5 || team.player5,
-        player6 || team.player6
+        player6 || team.player6,
       ].filter(Boolean);
 
       if (hasInternalDuplicate(newIds)) {
-        return safeReply(interaction, '❌ Duplicate BGMI ID inside the team after adding substitutes.');
+        return safeReply(
+          interaction,
+          "❌ Duplicate BGMI ID inside the team after adding substitutes.",
+        );
       }
 
       const onlyNewSubs = [];
@@ -1121,27 +1232,37 @@ if (!isTeamOwner && !adminUser) {
       if (player6) onlyNewSubs.push(player6);
 
       if (isDuplicateAny(onlyNewSubs, team.teamName)) {
-        return safeReply(interaction, '❌ Player 5 or Player 6 BGMI ID is already used in another team.');
+        return safeReply(
+          interaction,
+          "❌ Player 5 or Player 6 BGMI ID is already used in another team.",
+        );
       }
 
-      const result = await updateSubsInSheet(team.teamName, player5 || team.player5, player6 || team.player6);
+      const result = await updateSubsInSheet(
+        team.teamName,
+        player5 || team.player5,
+        player6 || team.player6,
+      );
       if (!result.success) {
-        return safeReply(interaction, '❌ Failed to update substitutes in Google Sheet.');
+        return safeReply(
+          interaction,
+          "❌ Failed to update substitutes in Google Sheet.",
+        );
       }
 
       await loadDBFromSheet();
 
       return safeReply(
         interaction,
-        `✅ Substitutes updated for **${team.teamName}**\nP5: \`${player5 || team.player5 || '—'}\`\nP6: \`${player6 || team.player6 || '—'}\``
+        `✅ Substitutes updated for **${team.teamName}**\nP5: \`${player5 || team.player5 || "—"}\`\nP6: \`${player6 || team.player6 || "—"}\``,
       );
     }
 
-    if (interaction.commandName === 'removesubs') {
-      const teamName = interaction.options.getString('teamname');
+    if (interaction.commandName === "removesubs") {
+      const teamName = interaction.options.getString("teamname");
 
       const team = db.registeredTeams.find(
-        t => t.teamName.toLowerCase() === teamName.toLowerCase()
+        (t) => t.teamName.toLowerCase() === teamName.toLowerCase(),
       );
 
       if (!team) {
@@ -1150,23 +1271,35 @@ if (!isTeamOwner && !adminUser) {
 
       const result = await updateSubsInSheet(team.teamName, "", "");
       if (!result.success) {
-        return safeReply(interaction, '❌ Failed to remove substitutes in Google Sheet.');
+        return safeReply(
+          interaction,
+          "❌ Failed to remove substitutes in Google Sheet.",
+        );
       }
 
       await loadDBFromSheet();
 
-      return safeReply(interaction, `✅ Player 5 and Player 6 removed from **${team.teamName}**.`);
+      return safeReply(
+        interaction,
+        `✅ Player 5 and Player 6 removed from **${team.teamName}**.`,
+      );
     }
-
   } catch (e) {
     console.log("Interaction handler error:", e.message);
 
     try {
       if (interaction.isRepliable()) {
         if (interaction.deferred || interaction.replied) {
-          await interaction.editReply({ content: '❌ Unexpected error occurred.' }).catch(() => {});
+          await interaction
+            .editReply({ content: "❌ Unexpected error occurred." })
+            .catch(() => {});
         } else {
-          await interaction.reply({ content: '❌ Unexpected error occurred.', ephemeral: true }).catch(() => {});
+          await interaction
+            .reply({
+              content: "❌ Unexpected error occurred.",
+              ephemeral: true,
+            })
+            .catch(() => {});
         }
       }
     } catch {}
@@ -1176,19 +1309,27 @@ if (!isTeamOwner && !adminUser) {
 });
 
 // ================= ERROR SAFETY =================
-client.on('error', (err) => {
-  console.error('Client error:', err);
+client.on("error", (err) => {
+  console.error("Client error:", err);
 });
 
-process.on('unhandledRejection', (reason) => {
-  console.error('Unhandled promise rejection:', reason);
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled promise rejection:", reason);
 });
 
-process.on('uncaughtException', (err) => {
-  console.error('Uncaught exception:', err);
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught exception:", err);
 });
 
 // ================= LOGIN =================
-client.login(TOKEN).catch(err => {
-  console.error('Login error:', err);
+client.login(TOKEN).catch((err) => {
+  console.error("Login error:", err);
+});
+
+app.get("/", (req, res) => {
+  res.send("Bot is running");
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
