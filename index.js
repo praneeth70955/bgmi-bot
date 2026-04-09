@@ -757,9 +757,15 @@ const commands = [
       "Delete all registrations, reset all slots, unlock all sets",
     ),
 
-  new SlashCommandBuilder()
-    .setName("nukechannel")
-    .setDescription("Clone current channel and delete old one (full clear)"),
+ new SlashCommandBuilder()
+  .setName("nukechannel")
+  .setDescription("Clear a selected channel safely")
+  .addChannelOption((opt) =>
+    opt
+      .setName("channel")
+      .setDescription("Select the channel to clear")
+      .setRequired(true)
+  ),
 
   new SlashCommandBuilder()
     .setName("addsubs")
@@ -1138,44 +1144,48 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     if (interaction.commandName === "nukechannel") {
-      const oldChannel = interaction.channel;
+  const oldChannel = interaction.options.getChannel("channel");
 
-      await safeReply(
-        interaction,
-        `💣 Nuking channel **#${oldChannel.name}**...`,
-        true,
-      );
+  if (!oldChannel || oldChannel.type !== ChannelType.GuildText) {
+    return safeReply(interaction, "❌ Please select a text channel.");
+  }
 
-      const newChannel = await oldChannel.clone({
-        name: oldChannel.name,
-        reason: `Nuked by ${interaction.user.tag}`,
-      });
+  await safeReply(
+    interaction,
+    `💣 Nuking channel **#${oldChannel.name}**...`,
+    true
+  );
 
-      await newChannel.setPosition(oldChannel.position);
+  const newChannel = await oldChannel.clone({
+    name: oldChannel.name,
+    reason: `Nuked by ${interaction.user.tag}`,
+  });
 
-      const nukedRegistration = oldChannel.name === REGISTRATION_PUBLIC_CHANNEL;
-      const nukedLog = oldChannel.name === REGISTRATION_LOG_CHANNEL;
+  await newChannel.setPosition(oldChannel.position);
 
-      await oldChannel.delete(`Nuked by ${interaction.user.tag}`);
+  const nukedRegistration = oldChannel.name === REGISTRATION_PUBLIC_CHANNEL;
+  const nukedLog = oldChannel.name === REGISTRATION_LOG_CHANNEL;
 
-      if (nukedRegistration || nukedLog) {
-        if (nukedRegistration) {
-          await setMetaInSheet("registrationPanelMessageId", "");
-          await setMetaInSheet("registrationStatusMessageId", "");
-        }
+  await oldChannel.delete(`Nuked by ${interaction.user.tag}`);
 
-        await loadDBFromSheet();
-        db.registrationPanelMessageId = null;
-        db.registrationStatusMessageId = null;
-
-        if (nukedRegistration) {
-          await ensureRegistrationPanel(interaction.guild);
-          await updateRegistrationStatusMessage(interaction.guild);
-        }
-      }
-
-      return;
+  if (nukedRegistration || nukedLog) {
+    if (nukedRegistration) {
+      await setMetaInSheet("registrationPanelMessageId", "");
+      await setMetaInSheet("registrationStatusMessageId", "");
     }
+
+    await loadDBFromSheet();
+    db.registrationPanelMessageId = null;
+    db.registrationStatusMessageId = null;
+
+    if (nukedRegistration) {
+      await ensureRegistrationPanel(interaction.guild);
+      await updateRegistrationStatusMessage(interaction.guild);
+    }
+  }
+
+  return;
+}
 
     if (interaction.commandName === "addsubs") {
       const teamName = interaction.options.getString("teamname");
