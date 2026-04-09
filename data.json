@@ -1,0 +1,37 @@
+{
+  "db": [
+    {
+      "team": "ICEFOX",
+      "leader": "527077012750204958",
+      "players": [
+        "5121446781",
+        "5121446783",
+        "5121446782",
+        "5121446780"
+      ],
+      "set": "SET-A"
+    }
+  ],
+  "regLocked": false,
+  "lockedSets": {
+    "SET-A": false,
+    "SET-B": false,
+    "SET-C": false,
+    "SET-D": false
+  },
+  "processedMessages": [],
+  "registrationStatusMessageId": "1491492870341918761",
+  "registeredTeams": [
+    {
+      "submitterDiscordId": "1365745630428790824",
+      "teamName": "Bgmi",
+      "leaderId": "1228383883",
+      "player2": "1727377378",
+      "player3": "1727378382",
+      "player4": "1727273773",
+      "slot": "SET-A",
+      "registeredAt": "2026-04-08T18:01:10.005Z"
+    }
+  ],
+  "registrationPanelMessageId": "1491497278010298474"
+}
