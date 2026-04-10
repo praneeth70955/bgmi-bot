@@ -835,61 +835,57 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     // ===== BUTTON =====
     if (interaction.isButton()) {
-      if (interaction.customId === "open_registration_modal") {
-        const modal = new ModalBuilder()
-          .setCustomId("registration_modal_submit")
-          .setTitle("LUMA BGMI Registration");
+  if (interaction.customId === "open_registration_modal") {
+    try {
+      const modal = new ModalBuilder()
+        .setCustomId("registration_modal_submit")
+        .setTitle("LUMA BGMI Registration");
 
-        const teamNameInput = new TextInputBuilder()
-          .setCustomId("team_name")
-          .setLabel("Team Name")
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true)
-          .setMaxLength(50);
+      const teamNameInput = new TextInputBuilder()
+        .setCustomId("team_name")
+        .setLabel("Team Name")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
 
-        const leaderInput = new TextInputBuilder()
-          .setCustomId("leader_id")
-          .setLabel("Leader BGMI ID (11 digits)")
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true)
-          .setMinLength(11)
-          .setMaxLength(11);
+      const leaderInput = new TextInputBuilder()
+        .setCustomId("leader_id")
+        .setLabel("Leader BGMI ID (11 digits)")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
 
-        const p2Input = new TextInputBuilder()
-          .setCustomId("p2_id")
-          .setLabel("Player 2 BGMI ID (11 digits)")
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true)
-          .setMinLength(11)
-          .setMaxLength(11);
+      const p2Input = new TextInputBuilder()
+        .setCustomId("p2_id")
+        .setLabel("Player 2 BGMI ID")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
 
-        const p3Input = new TextInputBuilder()
-          .setCustomId("p3_id")
-          .setLabel("Player 3 BGMI ID (11 digits)")
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true)
-          .setMinLength(11)
-          .setMaxLength(11);
+      const p3Input = new TextInputBuilder()
+        .setCustomId("p3_id")
+        .setLabel("Player 3 BGMI ID")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
 
-        const p4Input = new TextInputBuilder()
-          .setCustomId("p4_id")
-          .setLabel("Player 4 BGMI ID (11 digits)")
-          .setStyle(TextInputStyle.Short)
-          .setRequired(true)
-          .setMinLength(11)
-          .setMaxLength(11);
+      const p4Input = new TextInputBuilder()
+        .setCustomId("p4_id")
+        .setLabel("Player 4 BGMI ID")
+        .setStyle(TextInputStyle.Short)
+        .setRequired(true);
 
-        modal.addComponents(
-          new ActionRowBuilder().addComponents(teamNameInput),
-          new ActionRowBuilder().addComponents(leaderInput),
-          new ActionRowBuilder().addComponents(p2Input),
-          new ActionRowBuilder().addComponents(p3Input),
-          new ActionRowBuilder().addComponents(p4Input),
-        );
+      modal.addComponents(
+        new ActionRowBuilder().addComponents(teamNameInput),
+        new ActionRowBuilder().addComponents(leaderInput),
+        new ActionRowBuilder().addComponents(p2Input),
+        new ActionRowBuilder().addComponents(p3Input),
+        new ActionRowBuilder().addComponents(p4Input),
+      );
 
-        return await interaction.showModal(modal);
-      }
+      await interaction.showModal(modal);
+
+    } catch (err) {
+      console.log("Modal error:", err.message);
     }
+  }
+}
 
     // ===== MODAL SUBMIT =====
     if (interaction.isModalSubmit()) {
