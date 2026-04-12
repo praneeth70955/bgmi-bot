@@ -179,7 +179,7 @@ function normalizeId(id) {
 }
 
 function isValidBgmiId(id) {
-  return /^\d{11}$/.test(normalizeId(id));
+  return /^\d{10,11}$/.test(normalizeId(id));
 }
 
 function getTeamsInSet(setName) {
@@ -393,10 +393,10 @@ async function ensureRegistrationPanel(guild) {
       .setDescription(
         `📌 Required in form:
 • Team Name
-• Leader BGMI ID (11 digits)
-• Player 2 BGMI ID (11 digits)
-• Player 3 BGMI ID (11 digits)
-• Player 4 BGMI ID (11 digits)
+• Leader BGMI ID (10–11 digits)
+• Player 2 BGMI ID (10–11 digits)
+• Player 3 BGMI ID (10–11 digits)
+• Player 4 BGMI ID (10–11 digits)
 
 ➕ Optional substitutes:
 Use \`/addsubs\` later for Player 5 and Player 6.
@@ -481,10 +481,10 @@ async function sendRegistrationLog(
       .setDescription(`${user}`)
       .addFields(
         { name: "Team name", value: formData.teamName },
-        { name: "Leader BGMI ID (11 digits)", value: formData.leaderId },
-        { name: "Player 2 BGMI ID (11 digits)", value: formData.p2 },
-        { name: "Player 3 BGMI ID (11 digits)", value: formData.p3 },
-        { name: "Player 4 BGMI ID (11 digits)", value: formData.p4 },
+        { name: "Leader BGMI ID (10–11 digits)", value: formData.leaderId },
+        { name: "Player 2 BGMI ID (10–11 digits)", value: formData.p2 },
+        { name: "Player 3 BGMI ID (10–11 digits)", value: formData.p3 },
+        { name: "Player 4 BGMI ID (10–11 digits)", value: formData.p4 },
       )
       .setTimestamp();
 
@@ -544,12 +544,12 @@ async function handleRegistrationSubmit(interaction, formData) {
         interaction.user,
         formData,
         false,
-        "All required BGMI IDs must be exactly 11 digits.",
+        "All required BGMI IDs must be 10 to 11 digits.",
       );
 
       return safeEditReply(
         interaction,
-        "❌ All required BGMI IDs must be exactly 11 digits.",
+        "❌ All required BGMI IDs must be 10 to 11 digits.",
       );
     }
 
@@ -757,15 +757,15 @@ const commands = [
       "Delete all registrations, reset all slots, unlock all sets",
     ),
 
- new SlashCommandBuilder()
-  .setName("nukechannel")
-  .setDescription("Clear a selected channel safely")
-  .addChannelOption((opt) =>
-    opt
-      .setName("channel")
-      .setDescription("Select the channel to clear")
-      .setRequired(true)
-  ),
+  new SlashCommandBuilder()
+    .setName("nukechannel")
+    .setDescription("Clear a selected channel safely")
+    .addChannelOption((opt) =>
+      opt
+        .setName("channel")
+        .setDescription("Select the channel to clear")
+        .setRequired(true),
+    ),
 
   new SlashCommandBuilder()
     .setName("addsubs")
@@ -779,13 +779,13 @@ const commands = [
     .addStringOption((opt) =>
       opt
         .setName("player5")
-        .setDescription("Player 5 BGMI ID (11 digits)")
+        .setDescription("Player 5 BGMI ID (10–11 digits)")
         .setRequired(false),
     )
     .addStringOption((opt) =>
       opt
         .setName("player6")
-        .setDescription("Player 6 BGMI ID (11 digits)")
+        .setDescription("Player 6 BGMI ID (10–11 digits)")
         .setRequired(false),
     ),
 
@@ -849,34 +849,34 @@ client.on(Events.InteractionCreate, async (interaction) => {
 
         const leaderInput = new TextInputBuilder()
           .setCustomId("leader_id")
-          .setLabel("Leader BGMI ID (11 digits)")
+          .setLabel("Leader BGMI ID (10–11 digits)")
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
-          .setMinLength(11)
+          .setMinLength(10)
           .setMaxLength(11);
 
         const p2Input = new TextInputBuilder()
           .setCustomId("p2_id")
-          .setLabel("Player 2 BGMI ID (11 digits)")
+          .setLabel("Player 2 BGMI ID (10–11 digits)")
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
-          .setMinLength(11)
+          .setMinLength(10)
           .setMaxLength(11);
 
         const p3Input = new TextInputBuilder()
           .setCustomId("p3_id")
-          .setLabel("Player 3 BGMI ID (11 digits)")
+          .setLabel("Player 3 BGMI ID (10–11 digits)")
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
-          .setMinLength(11)
+          .setMinLength(10)
           .setMaxLength(11);
 
         const p4Input = new TextInputBuilder()
           .setCustomId("p4_id")
-          .setLabel("Player 4 BGMI ID (11 digits)")
+          .setLabel("Player 4 BGMI ID (10–11 digits)")
           .setStyle(TextInputStyle.Short)
           .setRequired(true)
-          .setMinLength(11)
+          .setMinLength(10)
           .setMaxLength(11);
 
         modal.addComponents(
@@ -1144,48 +1144,48 @@ client.on(Events.InteractionCreate, async (interaction) => {
     }
 
     if (interaction.commandName === "nukechannel") {
-  const oldChannel = interaction.options.getChannel("channel");
+      const oldChannel = interaction.options.getChannel("channel");
 
-  if (!oldChannel || oldChannel.type !== ChannelType.GuildText) {
-    return safeReply(interaction, "❌ Please select a text channel.");
-  }
+      if (!oldChannel || oldChannel.type !== ChannelType.GuildText) {
+        return safeReply(interaction, "❌ Please select a text channel.");
+      }
 
-  await safeReply(
-    interaction,
-    `💣 Nuking channel **#${oldChannel.name}**...`,
-    true
-  );
+      await safeReply(
+        interaction,
+        `💣 Nuking channel **#${oldChannel.name}**...`,
+        true,
+      );
 
-  const newChannel = await oldChannel.clone({
-    name: oldChannel.name,
-    reason: `Nuked by ${interaction.user.tag}`,
-  });
+      const newChannel = await oldChannel.clone({
+        name: oldChannel.name,
+        reason: `Nuked by ${interaction.user.tag}`,
+      });
 
-  await newChannel.setPosition(oldChannel.position);
+      await newChannel.setPosition(oldChannel.position);
 
-  const nukedRegistration = oldChannel.name === REGISTRATION_PUBLIC_CHANNEL;
-  const nukedLog = oldChannel.name === REGISTRATION_LOG_CHANNEL;
+      const nukedRegistration = oldChannel.name === REGISTRATION_PUBLIC_CHANNEL;
+      const nukedLog = oldChannel.name === REGISTRATION_LOG_CHANNEL;
 
-  await oldChannel.delete(`Nuked by ${interaction.user.tag}`);
+      await oldChannel.delete(`Nuked by ${interaction.user.tag}`);
 
-  if (nukedRegistration || nukedLog) {
-    if (nukedRegistration) {
-      await setMetaInSheet("registrationPanelMessageId", "");
-      await setMetaInSheet("registrationStatusMessageId", "");
+      if (nukedRegistration || nukedLog) {
+        if (nukedRegistration) {
+          await setMetaInSheet("registrationPanelMessageId", "");
+          await setMetaInSheet("registrationStatusMessageId", "");
+        }
+
+        await loadDBFromSheet();
+        db.registrationPanelMessageId = null;
+        db.registrationStatusMessageId = null;
+
+        if (nukedRegistration) {
+          await ensureRegistrationPanel(interaction.guild);
+          await updateRegistrationStatusMessage(interaction.guild);
+        }
+      }
+
+      return;
     }
-
-    await loadDBFromSheet();
-    db.registrationPanelMessageId = null;
-    db.registrationStatusMessageId = null;
-
-    if (nukedRegistration) {
-      await ensureRegistrationPanel(interaction.guild);
-      await updateRegistrationStatusMessage(interaction.guild);
-    }
-  }
-
-  return;
-}
 
     if (interaction.commandName === "addsubs") {
       const teamName = interaction.options.getString("teamname");
@@ -1210,14 +1210,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
       if (player5 && !isValidBgmiId(player5)) {
         return safeReply(
           interaction,
-          "❌ Player 5 BGMI ID must be exactly 11 digits.",
+          "❌ Player 5 BGMI ID must be 10 to 11 digits.",
         );
       }
 
       if (player6 && !isValidBgmiId(player6)) {
         return safeReply(
           interaction,
-          "❌ Player 6 BGMI ID must be exactly 11 digits.",
+          "❌ Player 6 BGMI ID must be 10 to 11 digits.",
         );
       }
 
