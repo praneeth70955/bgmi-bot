@@ -770,6 +770,7 @@ const commands = [
   new SlashCommandBuilder()
     .setName("addsubs")
     .setDescription("Add optional Player 5 / Player 6 to an existing team")
+    .setDefaultMemberPermissions(null) //
     .addStringOption((opt) =>
       opt
         .setName("teamname")
@@ -936,19 +937,21 @@ client.on(Events.InteractionCreate, async (interaction) => {
       ) {
         return safeReply(
           interaction,
-          `❌ Please use /addsubs only in #${REGISTRATION_PUBLIC_CHANNEL}`,
+          `❌ Use this command only in #${REGISTRATION_PUBLIC_CHANNEL}`,
         );
       }
     } else {
-      // All other commands = admin only + admin channel only
       if (!isAdmin(interaction.member)) {
         return safeReply(interaction, "❌ Only admins can use this command.");
       }
 
-      if (!isAdminChannel(interaction)) {
+      if (
+        !interaction.channel ||
+        interaction.channel.name !== ADMIN_CHANNEL_NAME
+      ) {
         return safeReply(
           interaction,
-          `❌ Please use commands only in #${ADMIN_CHANNEL_NAME}`,
+          `❌ Use commands only in #${ADMIN_CHANNEL_NAME}`,
         );
       }
     }
